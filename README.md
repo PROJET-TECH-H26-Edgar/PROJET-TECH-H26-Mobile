@@ -13,7 +13,7 @@
     sudo ufw allow 9002
   ```
 
-  - Modifier la configuration nginx
+- Modifier la configuration nginx
    ```bash
     location /mqtt {
         proxy_pass http://localhost:9002;
@@ -28,3 +28,4 @@
   ```bash
     npx expo start
   ```
+
