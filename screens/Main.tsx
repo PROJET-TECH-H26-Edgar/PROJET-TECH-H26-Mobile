@@ -50,31 +50,14 @@ export default function Main() {
       Alert.alert("Erreur", "Non connecté au broker MQTT");
       return;
     }
-    mqttRef.current.publish("1;ouvrir");
+    mqttRef.current.publish("0;ouvrir");
   };
-
-    const sendMqttMessage2 = () => {
+  const sendMqttMessage2 = () => {
       if (!mqttRef.current) {
         Alert.alert("Erreur", "Non connecté au broker MQTT");
         return;
       }
-      mqttRef.current.publish("1;ouvrir");
-    };
-
-    const sendMqttMessage3 = () => {
-    if (!mqttRef.current) {
-      Alert.alert("Erreur", "Non connecté au broker MQTT");
-      return;
-    }
-    mqttRef.current.publish("1;ouvrir");
-  };
-
-    const sendMqttMessage4 = () => {
-      if (!mqttRef.current) {
-        Alert.alert("Erreur", "Non connecté au broker MQTT");
-        return;
-      }
-      mqttRef.current.publish("1;ouvrir");
+      mqttRef.current.publish("2;ouvrir");
     };
 
   const handleLogout = async () => {
@@ -105,12 +88,8 @@ export default function Main() {
       <Text style={styles.messageLabel}>Dernier message :</Text>
       <Text style={styles.messageValue}>{lastMessage}</Text>
 
-      <Button title="Ouvrir 1" onPress={sendMqttMessage1} />
-      <Button title="Ouvrir 2" onPress={sendMqttMessage2} />
-      <Button title="Ouvrir 3" onPress={sendMqttMessage3} />
-      <Button title="Ouvrir 4" onPress={sendMqttMessage4} />
-
-
+      <Button title="Ouvrir la boîte" onPress={sendMqttMessage1} />
+      <Button title="Ouvrir la boîte" onPress={sendMqttMessage2} />
     </View>
   );
 }
