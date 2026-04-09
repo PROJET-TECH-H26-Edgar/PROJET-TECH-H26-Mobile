@@ -9,6 +9,31 @@ export default class MqttService {
     this.ws.binaryType = "arraybuffer";
     console.log("WS création, état:", this.ws.readyState);
 
+
+    this.ws.onopen = () => {
+      console.log("WS connecté !");
+      const encoder = new TextEncoder();
+      const clientId = "expo_sub_" + Math.random().toString(16).substr(2, 8);
+      const clientIdBytes = encoder.encode(clientId);
+      const usernameBytes = encoder.encode("apiuser");
+      const passwordBytes = encoder.encode("ApiPass10!");
+
+      const connectPacket = new Uint8Array([
+        0x10, 0,
+        0x00, 0x04, 0x4d, 0x51, 0x54, 0x54,
+        0x04,
+        0xc2,
+        0x00, 0x3c,
+        0x00, clientIdBytes.length, ...clientIdBytes,
+        0x00, usernameBytes.length, ...usernameBytes,
+        0x00, passwordBytes.length, ...passwordBytes,
+      ]);
+
+      connectPacket[1] = connectPacket.length - 2;
+      this.ws.send(connectPacket.buffer);
+    };
+
+
     this.ws.onmessage = (e) => {
       try {
         if (!(e.data instanceof ArrayBuffer)) {
@@ -16,11 +41,9 @@ export default class MqttService {
           return;
         }
 
-        console.log("WS message reçu, taille:", e.data.byteLength);
-
         const data = new Uint8Array(e.data);
+        console.log("WS message reçu, taille:", data.length);
 
-        // CONNACK
         if (data[0] === 0x20 && data[3] === 0x00) {
           console.log("CONNACK reçu, abonnement en cours...");
           const encoder = new TextEncoder();
@@ -32,7 +55,6 @@ export default class MqttService {
             0x00, topic.length, ...topic,
             0x00,
           ]);
-
           subPacket[1] = subPacket.length - 2;
           this.ws.send(subPacket.buffer);
           return;
@@ -41,42 +63,54 @@ export default class MqttService {
         if ((data[0] & 0xf0) === 0x30) {
           const topicLength = (data[2] << 8) | data[3];
           const messageStart = 4 + topicLength;
-
           const decoder = new TextDecoder();
           const message = decoder.decode(data.slice(messageStart));
-
           console.log("Message MQTT reçu:", message);
 
-          if (this.onMessage) {
-            this.onMessage(message);
-          }
+          if (this.onMessage) this.onMessage(message);
         }
 
       } catch (err) {
         console.log("WS PARSE ERROR:", err);
       }
     };
+
+    this.ws.onerror = (e) => {
+      console.log("WS ERREUR:", e?.message ?? e);
+    };
+
+    this.ws.onclose = () => {
+      console.log("WS fermé → reconnexion dans 2s...");
+      setTimeout(() => this.connect(), 2000);
+    };
   }
 
+
   publish(messageText) {
-    console.log("publish appelé, ws état:", this.ws?.readyState); // ← ajout
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.log("WS pas prêt, abandon publish"); // ← ajout
+      console.log("WS pas prêt, abandon publish");
       return;
     }
+
     const encoder = new TextEncoder();
     const topic = encoder.encode("distributeur/cle");
     const message = encoder.encode(messageText);
+    const remainingLength = 2 + topic.length + message.length;
+
     const pubPacket = new Uint8Array([
-      0x30, 0,
-      0x00, topic.length, ...topic,
+      0x30,
+      remainingLength,
+      topic.length >> 8,
+      topic.length & 0xff,
+      ...topic,
       ...message,
     ]);
-    pubPacket[1] = pubPacket.length - 2;
+
     this.ws.send(pubPacket.buffer);
-    console.log("Message publié:", messageText); // ← ajout
+    console.log("Message publié:", messageText);
   }
 
+  // Déconnecter la WS
   disconnect() {
     if (this.ws) this.ws.close();
   }
