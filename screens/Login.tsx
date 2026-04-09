@@ -8,7 +8,7 @@
 
     export default function Login({ setIsLogged }) {
       const navigation = useNavigation();
-      const [username, setUsername] = useState("");
+      const [mail, setmail] = useState("");
       const [password, setPassword] = useState("");
      const { setItem, getItem } = useStorage<string>("auth_token");
 
@@ -16,8 +16,8 @@
       const handleLogin = async () => {
 
 
-        if (!username || !password) {
-          Alert.alert("Error", "Please enter username and password");
+        if (!mail || !password) {
+          Alert.alert("Error", "Please enter mail and password");
           return;
         }
 
@@ -25,7 +25,7 @@
          const response = await fetch(`${URL}/auth/login`, {
            method: "POST",
            headers: { "Content-Type": "application/json" },
-           body: JSON.stringify({ username, password }),
+           body: JSON.stringify({ mail, password }),
          });
 
          const data = await response.json();
@@ -33,10 +33,10 @@
 
          if (response.ok && data.token) {
            await setItem(data.token);
-           await AsyncStorage.setItem("username", username);
+           await AsyncStorage.setItem("mail", mail);
            navigation.navigate("Main");
          } else {
-           Alert.alert("Error", data.message || "Wrong username or password");
+           Alert.alert("Error", data.message || "Wrong mail or password");
          }
        } catch (error) {
          console.log("LOGIN FETCH ERROR:", error);
@@ -49,10 +49,10 @@
           <Text style={styles.title}>Connexion</Text>
 
           <TextInput
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            accessibilityLabel="usernameInput"
+            placeholder="Adresse mail"
+            value={mail}
+            onChangeText={setmail}
+            accessibilityLabel="mailInput"
             style={styles.input}
           />
 
