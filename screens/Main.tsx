@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect  } from "@react-navigation/native";
 import { jwtDecode } from "jwt-decode";
 import useStorage from "../composables/useLocalStorage";
 import MqttService from "../services/mqtt";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const URL = "https://distributeurcle.edwrdledgar.me/api";
 
 interface JwtPayload {
@@ -26,12 +27,11 @@ interface Key {
   status: "Libérer" | "Occupée" | "Indisponible" | "locked";
 }
 
-
 const STATUS_STYLE: Record<Key["status"], { label: string; color: string; bg: string }> = {
-  "Libérer":      { label: "Libérer",      color: "#333",   bg: "#eee" },
+  "Libérer":      { label: "Libérer",      color: "#333",    bg: "#eee" },
   "Occupée":      { label: "Occupée",      color: "#e07b00", bg: "#fff3e0" },
   "Indisponible": { label: "Indisponible", color: "#e07b00", bg: "#fff3e0" },
-  "locked":       { label: "🔒",           color: "#999",   bg: "#f5f5f5" },
+  "locked":       { label: "🔒",           color: "#999",    bg: "#f5f5f5" },
 };
 
 export default function Main() {
@@ -42,58 +42,69 @@ export default function Main() {
   const [loading, setLoading] = useState(true);
   const [idRole, setIdRole] = useState<number | null>(null);
   const mqttRef = useRef(null);
+  const idRoleRef = useRef<number | null>(null);
+  const [idUser, setIdUser] = useState<number | null>(null);
+
+  const loadData = useCallback(async () => {
+    const savedMail = await AsyncStorage.getItem("mail");
+    if (savedMail) setMail(savedMail);
+
+    const token = await getItem();
+    if (!token) return;
+    let userRole: number = 0;
+
+    try {
+      const payload = jwtDecode<JwtPayload>(token);
+      userRole = payload.idRole ?? 0;
+      setIdRole(payload.idRole);
+      setIdUser(payload.idUser);
+      idRoleRef.current = payload.idRole;
+    } catch {
+      Alert.alert("Erreur", "Token invalide");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${URL}/key`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+
+      const filteredKeys = data.map((key: any) => {
+        if (userRole > key.idRole) {
+          return { ...key, status: "locked" };
+        }
+        return key;
+      });
+
+      setKeys(filteredKeys);
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible de récupérer les clés");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+   useFocusEffect(
+      useCallback(() => {
+        loadData();
+      }, [loadData])
+    );
 
   useEffect(() => {
-    const loadData = async () => {
-      const savedMail = await AsyncStorage.getItem("mail");
-      if (savedMail) setMail(savedMail);
 
-      const token = await getItem();
-      if (!token) return;
-      let userRole: number = 0;
-
-      try {
-        const payload = jwtDecode<JwtPayload>(token);
-        userRole = payload.idRole ?? 0;
-        setIdRole(payload.idRole);
-        console.log("USER ROLE:", userRole);
-        console.log("PAYLOAD:", JSON.stringify(payload));
-
-      } catch {
-        Alert.alert("Erreur", "Token invalide");
-        return
+    const mqtt = new MqttService((topic: string, message: string) => {
+      console.log("MQTT:", topic, message);
+      if (topic === "rfid/return") {
+        loadData();
+        if (idRoleRef.current === 1) {
+          Alert.alert("Clé retournée 🔑", "Une clé a été détectée au distributeur, veuillez la replacer.");
+        }
       }
-        try {
-            const response = await fetch(`${URL}/key`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-           console.log("STATUS:", response.status);
-            const data = await response.json();
-            console.log("DATA:", JSON.stringify(data));
+    }, ["distributeur/cle", "rfid/return"]);
 
-           const filteredKeys = data.map((key: any) => {
-             if (userRole > key.idRole) {
-               return { ...key, status: "locked" };
-             }
-             return key;
-           });
-
-            setKeys(filteredKeys);
-          } catch (error) {
-              console.log("FETCH ERROR:", error);
-            Alert.alert("Erreur", "Impossible de récupérer les clés");
-          } finally {
-            setLoading(false);
-          }
-        };
-    loadData();
-
-    const mqtt = new MqttService((message: string) => {
-      console.log("MQTT:", message);
-    });
     mqtt.connect();
     mqttRef.current = mqtt;
     return () => mqtt.disconnect();
@@ -105,27 +116,47 @@ export default function Main() {
     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
   };
 
-  const handleKeyPress = (key: Key) => {
-    if (key.status === "locked" || key.status === "Indisponible" || key.status ==="Occupée") return;
+  const handleKeyPress = async (key: Key) => {
+    if (key.status === "locked" || key.status === "Indisponible" || key.status === "Occupée") return;
     if (!mqttRef.current) {
       Alert.alert("Erreur", "Non connecté au broker MQTT");
       return;
     }
-    mqttRef.current.publish(`${key.idKey - 1};ouvrir`);
+
+    try {
+      const token = await getItem();
+      const response = await fetch(`${URL}/borrows`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type":    "application/json",
+        },
+        body: JSON.stringify({ idKey: key.idKey }),
+      });
+console.log("STATUS:", response.status);
+const data = await response.json();
+console.log("RESPONSE:", JSON.stringify(data));
+      if (!response.ok) {
+        Alert.alert("Erreur", "Impossible de créer l'emprunt");
+        return;
+      }
+
+      mqttRef.current.publish(`${key.idKey};ouvrir`);
+      loadData();
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible de créer l'emprunt");
+    }
   };
 
   const roleLabel = idRole === 1 ? "Admin" : idRole === 2 ? "Technicien" : idRole === 3 ? "Utilisateur" : "";
 
-  
-    const pairs = [];
-    for (let i = 0; i < keys.length; i += 2) {
-      pairs.push(keys.slice(i, i + 2));
-    }
-// aide de l'ia pour afficher les clés sans avoir à repeter plein de fois
+  const pairs = [];
+  for (let i = 0; i < keys.length; i += 2) {
+    pairs.push(keys.slice(i, i + 2));
+  }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Gestion des clés</Text>
         <View style={styles.headerRight}>
@@ -151,7 +182,7 @@ export default function Main() {
           <View key={i} style={styles.row}>
             {pair.map((key) => {
               const s = STATUS_STYLE[key.status];
-              const isDisabled = key.status === "locked" || key.status === "Indisponible" || key.status ==="Occupée";
+              const isDisabled = key.status === "locked" || key.status === "Indisponible" || key.status === "Occupée";
               return (
                 <TouchableOpacity
                   key={key.idKey}
@@ -170,7 +201,6 @@ export default function Main() {
                 </TouchableOpacity>
               );
             })}
-            {/* Si nombre impair, remplir la dernière case */}
             {pair.length === 1 && <View style={styles.keyCard} />}
           </View>
         ))}

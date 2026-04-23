@@ -37,9 +37,16 @@ export default function Admin() {
           <Text style={styles.cardText}>Ajouter une clé</Text>
           <Text style={styles.cardArrow}>›</Text>
         </TouchableOpacity>
-
+        <Text style={styles.sectionTitle}>Retours</Text>
+        <TouchableOpacity style={styles.card}
+          onPress={() => navigation.navigate("Return")}>
+          <Text style={styles.cardIcon}>🔄</Text>
+          <Text style={styles.cardText}>Retours en attente</Text>
+          <Text style={styles.cardArrow}>›</Text>
+        </TouchableOpacity>
         <Text style={styles.sectionTitle}>Historique</Text>
-        <TouchableOpacity style={styles.card}>
+        <TouchableOpacity style={styles.card}
+        onPress={() => navigation.navigate("BorrowHistory")}>
           <Text style={styles.cardIcon}>H</Text>
           <Text style={styles.cardText}>Voir les emprunts</Text>
           <Text style={styles.cardArrow}>›</Text>

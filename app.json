@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "m5",
-    "slug": "m5",
+    "slug": "distributeurcle",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -33,8 +33,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "cf5b5cec-fa22-4012-b2c5-d1ad7e1bb867"
+        "projectId": "17e1000b-986d-4638-817e-933c34201110"
       }
-    }
+    },
+    "owner": "edgar1011"
   }
 }

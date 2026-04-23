@@ -1,14 +1,19 @@
+//Cette partie à été généré par l'ia
+//Dans mon ca j'ai changé le fait que le MQTT ne se connecte pas à 1 seul topic mais qu'il en prend 1 par defaut et peut etre changé
+
+
 export default class MqttService {
-  constructor(onMessage) {
+  constructor(onMessage, topics = ["distributeur/cle"]) {
     this.ws = null;
     this.onMessage = onMessage;
+    this.topics = Array.isArray(topics) ? topics : [topics];
+    this.topic = this.topics[0];
   }
 
   connect() {
     this.ws = new WebSocket("wss://distributeurcle.edwrdledgar.me/mqtt", ["mqtt"]);
     this.ws.binaryType = "arraybuffer";
     console.log("WS création, état:", this.ws.readyState);
-
 
     this.ws.onopen = () => {
       console.log("WS connecté !");
@@ -19,11 +24,11 @@ export default class MqttService {
       const passwordBytes = encoder.encode("ApiPass10!");
 
       const connectPacket = new Uint8Array([
-        0x10, 0,
-        0x00, 0x04, 0x4d, 0x51, 0x54, 0x54,
-        0x04,
-        0xc2,
-        0x00, 0x3c,
+        0x10, 0, // header fixe, length à corriger ensuite
+        0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, // "MQTT"
+        0x04, // version
+        0xc2, // flags : username+password
+        0x00, 0x3c, // keepalive 60s
         0x00, clientIdBytes.length, ...clientIdBytes,
         0x00, usernameBytes.length, ...usernameBytes,
         0x00, passwordBytes.length, ...passwordBytes,
@@ -47,7 +52,7 @@ export default class MqttService {
         if (data[0] === 0x20 && data[3] === 0x00) {
           console.log("CONNACK reçu, abonnement en cours...");
           const encoder = new TextEncoder();
-          const topic = encoder.encode("distributeur/cle");
+          const topic = encoder.encode(this.topic);
 
           const subPacket = new Uint8Array([
             0x82, 0,
@@ -93,7 +98,7 @@ export default class MqttService {
     }
 
     const encoder = new TextEncoder();
-    const topic = encoder.encode("distributeur/cle");
+    const topic = encoder.encode(this.topic);
     const message = encoder.encode(messageText);
     const remainingLength = 2 + topic.length + message.length;
 
