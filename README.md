@@ -1,9 +1,19 @@
 # Application Mobile pour le distributeur de clé
-## Lancement de l'application 
+
+## Cloner le dépôt :
+
+```bash
+git clone <URL_DU_REPO>
+cd <NOM_DU_PROJET>
+```
+## Installer les dépendances
   ```bash
     npm install
   ```
-
+## Tester en dev
+```bash
+npx expo start
+```
 
 ## Mise en place : 
 
@@ -23,6 +33,19 @@
         proxy_set_header Host $host;
     }
    ```
+- Créer un .env à la racine
+  ```bash
+      # API
+    EXPO_PUBLIC_API_URL=https://distributeurcle.edwrdledgar.me/api
+    
+    # MQTT (WebSocket)
+    EXPO_PUBLIC_MQTT_URL=wss://distributeurcle.edwrdledgar.me/mqtt
+    
+    # Auth MQTT
+    EXPO_PUBLIC_MQTT_USERNAME=apiuser
+    EXPO_PUBLIC_MQTT_PASSWORD=ApiPass10!
+  ```
+  
 ## Téléchargement de l'application sur le mobile
 1. Prendre l'APK dans les fichiers du dépot github
 2. Si l'APK rencontre un problème ou que des changements sont apportés voici la méthode pour obtenir un nouveau AKP
