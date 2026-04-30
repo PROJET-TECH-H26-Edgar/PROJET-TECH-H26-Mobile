@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import useStorage from "../composables/useLocalStorage";
 
-const BASE_URL = "https://distributeurcle.edwrdledgar.me/api";
+const URL = process.env.EXPO_PUBLIC_API_URL;
 
 interface Borrow {
   idHBorrow: number;

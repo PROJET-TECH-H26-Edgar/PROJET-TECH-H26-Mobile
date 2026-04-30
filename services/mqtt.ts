@@ -11,7 +11,7 @@ export default class MqttService {
   }
 
   connect() {
-    this.ws = new WebSocket("wss://distributeurcle.edwrdledgar.me/mqtt", ["mqtt"]);
+    this.ws = new WebSocket(process.env.EXPO_PUBLIC_MQTT_URL, ["mqtt"]);
     this.ws.binaryType = "arraybuffer";
     console.log("WS création, état:", this.ws.readyState);
 
@@ -20,8 +20,8 @@ export default class MqttService {
       const encoder = new TextEncoder();
       const clientId = "expo_sub_" + Math.random().toString(16).substr(2, 8);
       const clientIdBytes = encoder.encode(clientId);
-      const usernameBytes = encoder.encode("apiuser");
-      const passwordBytes = encoder.encode("ApiPass10!");
+      const usernameBytes = encoder.encode(process.env.EXPO_PUBLIC_MQTT_USERNAME);
+      const passwordBytes = encoder.encode(process.env.EXPO_PUBLIC_MQTT_PASSWORD);
 
       const connectPacket = new Uint8Array([
         0x10, 0, // header fixe, length à corriger ensuite

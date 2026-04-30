@@ -13,7 +13,7 @@ import useStorage from "../composables/useLocalStorage";
 import MqttService from "../services/mqtt";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const URL = "https://distributeurcle.edwrdledgar.me/api";
+const URL = process.env.EXPO_PUBLIC_API_URL;
 
 interface JwtPayload {
   idUser: number;
@@ -93,17 +93,17 @@ export default function Main() {
       }, [loadData])
     );
 
-  useEffect(() => {
+ useEffect(() => {
 
     const mqtt = new MqttService((topic: string, message: string) => {
       console.log("MQTT:", topic, message);
-      if (topic === "rfid/return") {
+      if (topic === "distributeur/rfid") {
         loadData();
         if (idRoleRef.current === 1) {
           Alert.alert("Clé retournée 🔑", "Une clé a été détectée au distributeur, veuillez la replacer.");
         }
       }
-    }, ["distributeur/cle", "rfid/return"]);
+    }, ["distributeur/cle", "distributeur/rfid"]);
 
     mqtt.connect();
     mqttRef.current = mqtt;
