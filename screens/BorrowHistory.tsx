@@ -30,7 +30,7 @@ export default function BorrowHistory() {
         const token = await getItem();
         if (!token) return;
 
-        const response = await fetch(`${BASE_URL}/borrows`, {
+        const response = await fetch(`${URL}/borrows`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
