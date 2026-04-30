@@ -1,4 +1,9 @@
 # Application Mobile pour le distributeur de clé
+##Lancement de l'application 
+  ```bash
+    npm install
+  ```
+
 
 ##Mise en place : 
 
