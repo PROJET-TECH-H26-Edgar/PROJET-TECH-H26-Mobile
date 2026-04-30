@@ -4,7 +4,7 @@
     import { useNavigation } from "@react-navigation/native";
     import useStorage  from "../composables/useLocalStorage";
 
-    const URL = "https://distributeurcle.edwrdledgar.me/api";
+ const URL = process.env.EXPO_PUBLIC_API_URL;
 
     export default function Login({ setIsLogged }) {
       const navigation = useNavigation();

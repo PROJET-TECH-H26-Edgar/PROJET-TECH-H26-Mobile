@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "reac
 import MqttService from "../services/mqtt";
 import { Picker } from "@react-native-picker/picker";
 import useStorage from "../composables/useLocalStorage";
-const URL = "https://distributeurcle.edwrdledgar.me/api";
+const URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function AddKeys() {
   const [name, setName] = useState("");
