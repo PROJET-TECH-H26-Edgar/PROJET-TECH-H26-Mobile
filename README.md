@@ -75,7 +75,7 @@ npx expo start
     ```
 
     Le fichier Obtenu est un .aab il faut maitenant le transformer en .apk
-    - Installer le fhciher pour faire la tranformation
+    - Installer le fichier .jar pour faire la tranformation
       https://github.com/google/bundletool/releases
     - mettre le .jar dans le dossier du projet + le .aab généré
     - Faire la transformation en du .aab en .apk
