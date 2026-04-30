@@ -1,11 +1,11 @@
 # Application Mobile pour le distributeur de clé
-##Lancement de l'application 
+## Lancement de l'application 
   ```bash
     npm install
   ```
 
 
-##Mise en place : 
+## Mise en place : 
 
 - Ouvrir le port 9002 sur le firewall du serveur
   ```bash
