@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import useStorage from "../composables/useLocalStorage";
 
@@ -15,6 +16,7 @@ interface Key {
   idKey: number;
   name: string;
   status: "Libérer" | "Occupée" | "Indisponible" | "locked";
+  slot: number;
 }
 
 const STATUS_STYLE: Record<Key["status"], { label: string; color: string; bg: string }> = {
@@ -35,7 +37,7 @@ export default function ShowKeys() {
         const token = await getItem();
         if (!token) return;
 
-        const response = await fetch(`${BASE_URL}/key`, {
+        const response = await fetch(`${URL}/key`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -57,6 +59,43 @@ export default function ShowKeys() {
     loadData();
   }, []);
 
+  const handleDelete = async (idKey: number) => {
+    Alert.alert(
+      "Supprimer",
+      "Confirmer la suppression de cette clé ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await getItem();
+
+              const response = await fetch(`${URL}/key/${idKey}`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              });
+
+              if (!response.ok) {
+                Alert.alert("Erreur", "Suppression impossible");
+                return;
+              }
+
+              setKeys((prev) => prev.filter((k) => k.idKey !== idKey));
+            } catch (error) {
+              console.log(error);
+              Alert.alert("Erreur", "Suppression impossible");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -67,24 +106,35 @@ export default function ShowKeys() {
 
   return (
     <View style={styles.container}>
-      {/* En-tête du tableau */}
+      {/* HEADER */}
       <View style={styles.tableHeader}>
         <Text style={[styles.headerCell, styles.colId]}>#</Text>
+        <Text style={[styles.headerCell, { width: 60 }]}>Slot</Text>
         <Text style={[styles.headerCell, styles.colName]}>Nom</Text>
         <Text style={[styles.headerCell, styles.colStatus]}>Statut</Text>
+        <Text style={[styles.headerCell, { width: 50 }]}>Action</Text>
       </View>
 
-      {/* Lignes */}
+      {/* LIST */}
       <FlatList
         data={keys}
         keyExtractor={(item) => String(item.idKey)}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item, index }) => {
           const s = STATUS_STYLE[item.status];
+
           return (
             <View style={[styles.row, index % 2 === 0 && styles.rowEven]}>
               <Text style={[styles.cell, styles.colId]}>{item.idKey}</Text>
-              <Text style={[styles.cell, styles.colName]}>{item.name}</Text>
+
+              <Text style={[styles.cell, { width: 60 }]}>
+                {item.slot}
+              </Text>
+
+              <Text style={[styles.cell, styles.colName]}>
+                {item.name}
+              </Text>
+
               <View style={[styles.colStatus, styles.badgeWrapper]}>
                 <View style={[styles.badge, { backgroundColor: s.bg }]}>
                   <Text style={[styles.badgeText, { color: s.color }]}>
@@ -92,6 +142,14 @@ export default function ShowKeys() {
                   </Text>
                 </View>
               </View>
+
+              {/* DELETE BUTTON */}
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => handleDelete(item.idKey)}
+              >
+                <Text style={styles.deleteText}>🗑</Text>
+              </TouchableOpacity>
             </View>
           );
         }}
@@ -110,13 +168,13 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 16,
   },
+
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
 
-  // Tableau
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#333",
@@ -125,11 +183,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 4,
   },
+
   headerCell: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 14,
   },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -137,41 +197,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     backgroundColor: "#fff",
   },
+
   rowEven: {
     backgroundColor: "#f9f9f9",
   },
+
   cell: {
     fontSize: 14,
     color: "#333",
   },
+
   separator: {
     height: 1,
     backgroundColor: "#eee",
   },
 
-  // Colonnes
   colId: {
     width: 36,
   },
+
   colName: {
     flex: 1,
   },
+
   colStatus: {
     width: 110,
   },
 
-  // Badge statut
   badgeWrapper: {
     alignItems: "flex-start",
   },
+
   badge: {
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
+
   badgeText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+
+  deleteBtn: {
+    width: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  deleteText: {
+    fontSize: 18,
+    color: "#c62828",
+    fontWeight: "bold",
   },
 
   empty: {
